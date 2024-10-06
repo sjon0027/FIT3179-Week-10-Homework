@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Combined Visualizations</title>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5.30.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.20.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.26.0"></script>
+  <style>
+    .container {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .vis-container {
+      width: 45%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- First Visualization (Map) -->
+    <div id="vis1" class="vis-container"></div>
+    
+    <!-- Second Visualization (Bar Chart) -->
+    <div id="vis2" class="vis-container"></div>
+  </div>
+
+  <script>
+    // First Visualization (Map of South Australian Government Sites)
+    const spec1 = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": 400,
+      "height": 300,
+      "title": "South Australian Government Education and Child Development Sites",
+      "projection": {"type": "equirectangular"},
+      "layer": [
+        {
+          "data": {
+            "url": "https://raw.githubusercontent.com/sjon0027/FIT3179-Week-9-Homework/refs/heads/main/sa_localities.json",
+            "format": {"type": "topojson", "feature": "sa_localities"}
+          },
+          "mark": {"type": "geoshape", "fill": "lightgray", "stroke": "white"}
+        },
+        {
+          "data": {
+            "url": "https://raw.githubusercontent.com/sjon0027/FIT3179-Week-9-Homework/refs/heads/main/2015sitelocationdata.csv"
+          },
+          "mark": {
+            "type": "circle",
+            "tooltip": {
+              "content": "data",
+              "fields": ["School Name", "Address", "Suburb", "Postcode"]
+            }
+          },
+          "encoding": {
+            "longitude": {"field": "Longitude", "type": "quantitative"},
+            "latitude": {"field": "Latitude", "type": "quantitative"},
+            "size": {"value": 10},
+            "color": {
+              "field": "Postcode",
+              "type": "nominal",
+              "bin": true,
+              "legend": {"orient": "bottom-right", "title": "Postcode Ranges"}
+            }
+          }
+        }
+      ],
+      "config": {}
+    };
+
+    // Second Visualization (Bar Chart for Average Completeness by Amenity)
+    const spec2 = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "data": {
+        "url": "https://raw.githubusercontent.com/sjon0027/FIT3179-Week-10-Homework/refs/heads/main/australia_hxl_cleaned.csv",
+        "format": {"type": "csv"}
+      },
+      "params": [
+        {
+          "name": "AmenitySelection",
+          "bind": {
+            "input": "select",
+            "options": [null, "clinic", "dentist", "doctors", "hospital", "pharmacy", "Podiatrist"],
+            "labels": ["Show All", "Clinic", "Dentist", "Doctors", "Hospital", "Pharmacy", "Podiatrist"],
+            "name": "Select Amenity Type: "
+          }
+        }
+      ],
+      "transform": [
+        {"filter": "AmenitySelection == null || datum['#loc+amenity'] == AmenitySelection"}
+      ],
+      "layer": [
+        {
+          "mark": "bar",
+          "encoding": {
+            "x": {"field": "#loc+amenity", "type": "nominal", "title": "Amenity"},
+            "y": {
+              "aggregate": "mean",
+              "field": "completeness",
+              "type": "quantitative",
+              "title": "Average Completeness"
+            },
+            "color": {
+              "field": "#loc+amenity",
+              "type": "nominal",
+              "scale": {
+                "domain": ["Podiatrist", "clinic", "dentist", "doctors", "hospital", "pharmacy"],
+                "range": ["#1f77b4", "#ff7f0e", "#d62728", "#2ca02c", "#9467bd", "#bcbd22"]
+              },
+              "title": "Amenity Type"
+            },
+            "tooltip": [
+              {"field": "#loc+amenity", "type": "nominal", "title": "Amenity"},
+              {"aggregate": "mean", "field": "completeness", "type": "quantitative", "title": "Average Completeness"}
+            ]
+          }
+        },
+        {
+          "mark": {
+            "type": "text",
+            "align": "center",
+            "baseline": "middle",
+            "dy": -10,
+            "color": "black"
+          },
+          "encoding": {
+            "text": {
+              "aggregate": "mean",
+              "field": "completeness",
+              "type": "quantitative",
+              "format": ".2f"
+            },
+            "x": {"field": "#loc+amenity", "type": "nominal"},
+            "y": {"aggregate": "mean", "field": "completeness", "type": "quantitative"}
+          }
+        }
+      ],
+      "width": 400,
+      "height": 300,
+      "interactive": true,
+      "config": {}
+    };
+
+    // Render both visualizations side by side
+    vegaEmbed("#vis1", spec1, {mode: "vega-lite"}).then(console.log).catch(console.warn);
+    vegaEmbed("#vis2", spec2, {mode: "vega-lite"}).then(console.log).catch(console.warn);
+  </script>
+</body>
+</html>
